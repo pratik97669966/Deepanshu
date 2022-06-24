@@ -1,5 +1,5 @@
 /*
-	Paradigm Shift by HTML5 UP
+	Phantom by HTML5 UP
 	html5up.net | @ajlkn
 	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
 */
@@ -11,13 +11,12 @@
 
 	// Breakpoints.
 		breakpoints({
-			default:   ['1681px',   null       ],
-			xlarge:    ['1281px',   '1680px'   ],
-			large:     ['981px',    '1280px'   ],
-			medium:    ['737px',    '980px'    ],
-			small:     ['481px',    '736px'    ],
-			xsmall:    ['361px',    '480px'    ],
-			xxsmall:   [null,       '360px'    ]
+			xlarge:   [ '1281px',  '1680px' ],
+			large:    [ '981px',   '1280px' ],
+			medium:   [ '737px',   '980px'  ],
+			small:    [ '481px',   '736px'  ],
+			xsmall:   [ '361px',   '480px'  ],
+			xxsmall:  [ null,      '360px'  ]
 		});
 
 	// Play initial animations on page load.
@@ -27,182 +26,160 @@
 			}, 100);
 		});
 
-	// Hack: Enable IE workarounds.
-		if (browser.name == 'ie')
-			$body.addClass('is-ie');
-
-	// Mobile?
+	// Touch?
 		if (browser.mobile)
-			$body.addClass('is-mobile');
+			$body.addClass('is-touch');
 
-	// Scrolly.
-		$('.scrolly')
-			.scrolly({
-				offset: 100
-			});
+	// Forms.
+		var $form = $('form');
 
-	// Polyfill: Object fit.
-		if (!browser.canUse('object-fit')) {
-
-			$('.image[data-position]').each(function() {
+		// Auto-resizing textareas.
+			$form.find('textarea').each(function() {
 
 				var $this = $(this),
-					$img = $this.children('img');
+					$wrapper = $('<div class="textarea-wrapper"></div>'),
+					$submits = $this.find('input[type="submit"]');
 
-				// Apply img as background.
-					$this
-						.css('background-image', 'url("' + $img.attr('src') + '")')
-						.css('background-position', $this.data('position'))
-						.css('background-size', 'cover')
-						.css('background-repeat', 'no-repeat');
+				$this
+					.wrap($wrapper)
+					.attr('rows', 1)
+					.css('overflow', 'hidden')
+					.css('resize', 'none')
+					.on('keydown', function(event) {
 
-				// Hide img.
-					$img
-						.css('opacity', '0');
+						if (event.keyCode == 13
+						&&	event.ctrlKey) {
+
+							event.preventDefault();
+							event.stopPropagation();
+
+							$(this).blur();
+
+						}
+
+					})
+					.on('blur focus', function() {
+						$this.val($.trim($this.val()));
+					})
+					.on('input blur focus --init', function() {
+
+						$wrapper
+							.css('height', $this.height());
+
+						$this
+							.css('height', 'auto')
+							.css('height', $this.prop('scrollHeight') + 'px');
+
+					})
+					.on('keyup', function(event) {
+
+						if (event.keyCode == 9)
+							$this
+								.select();
+
+					})
+					.triggerHandler('--init');
+
+				// Fix.
+					if (browser.name == 'ie'
+					||	browser.mobile)
+						$this
+							.css('max-height', '10em')
+							.css('overflow-y', 'auto');
 
 			});
 
-			$('.gallery > a').each(function() {
+	// Menu.
+		var $menu = $('#menu');
 
-				var $this = $(this),
-					$img = $this.children('img');
+		$menu.wrapInner('<div class="inner"></div>');
 
-				// Apply img as background.
-					$this
-						.css('background-image', 'url("' + $img.attr('src') + '")')
-						.css('background-position', 'center')
-						.css('background-size', 'cover')
-						.css('background-repeat', 'no-repeat');
+		$menu._locked = false;
 
-				// Hide img.
-					$img
-						.css('opacity', '0');
+		$menu._lock = function() {
 
-			});
+			if ($menu._locked)
+				return false;
 
-		}
+			$menu._locked = true;
 
-	// Gallery.
-		$('.gallery')
+			window.setTimeout(function() {
+				$menu._locked = false;
+			}, 350);
+
+			return true;
+
+		};
+
+		$menu._show = function() {
+
+			if ($menu._lock())
+				$body.addClass('is-menu-visible');
+
+		};
+
+		$menu._hide = function() {
+
+			if ($menu._lock())
+				$body.removeClass('is-menu-visible');
+
+		};
+
+		$menu._toggle = function() {
+
+			if ($menu._lock())
+				$body.toggleClass('is-menu-visible');
+
+		};
+
+		$menu
+			.appendTo($body)
+			.on('click', function(event) {
+				event.stopPropagation();
+			})
 			.on('click', 'a', function(event) {
 
-				var $a = $(this),
-					$gallery = $a.parents('.gallery'),
-					$modal = $gallery.children('.modal'),
-					$modalImg = $modal.find('img'),
-					href = $a.attr('href');
+				var href = $(this).attr('href');
 
-				// Not an image? Bail.
-					if (!href.match(/\.(jpg|gif|png|mp4)$/))
+				event.preventDefault();
+				event.stopPropagation();
+
+				// Hide.
+					$menu._hide();
+
+				// Redirect.
+					if (href == '#menu')
 						return;
 
-				// Prevent default.
-					event.preventDefault();
-					event.stopPropagation();
-
-				// Locked? Bail.
-					if ($modal[0]._locked)
-						return;
-
-				// Lock.
-					$modal[0]._locked = true;
-
-				// Set src.
-					$modalImg.attr('src', href);
-
-				// Set visible.
-					$modal.addClass('visible');
-
-				// Focus.
-					$modal.focus();
-
-				// Delay.
-					setTimeout(function() {
-
-						// Unlock.
-							$modal[0]._locked = false;
-
-					}, 600);
+					window.setTimeout(function() {
+						window.location.href = href;
+					}, 350);
 
 			})
-			.on('click', '.modal', function(event) {
+			.append('<a class="close" href="#menu">Close</a>');
 
-				var $modal = $(this),
-					$modalImg = $modal.find('img');
+		$body
+			.on('click', 'a[href="#menu"]', function(event) {
 
-				// Locked? Bail.
-					if ($modal[0]._locked)
-						return;
+				event.stopPropagation();
+				event.preventDefault();
 
-				// Already hidden? Bail.
-					if (!$modal.hasClass('visible'))
-						return;
-
-				// Stop propagation.
-					event.stopPropagation();
-
-				// Lock.
-					$modal[0]._locked = true;
-
-				// Clear visible, loaded.
-					$modal
-						.removeClass('loaded')
-
-				// Delay.
-					setTimeout(function() {
-
-						$modal
-							.removeClass('visible')
-
-						setTimeout(function() {
-
-							// Clear src.
-								$modalImg.attr('src', '');
-
-							// Unlock.
-								$modal[0]._locked = false;
-
-							// Focus.
-								$body.focus();
-
-						}, 475);
-
-					}, 125);
+				// Toggle.
+					$menu._toggle();
 
 			})
-			.on('keypress', '.modal', function(event) {
+			.on('click', function(event) {
 
-				var $modal = $(this);
+				// Hide.
+					$menu._hide();
 
-				// Escape? Hide modal.
+			})
+			.on('keydown', function(event) {
+
+				// Hide on escape.
 					if (event.keyCode == 27)
-						$modal.trigger('click');
+						$menu._hide();
 
-			})
-			.on('mouseup mousedown mousemove', '.modal', function(event) {
-
-				// Stop propagation.
-					event.stopPropagation();
-
-			})
-			.prepend('<div class="modal" tabIndex="-1"><div class="inner"><img src="" /></div></div>')
-				.find('img')
-					.on('load', function(event) {
-
-						var $modalImg = $(this),
-							$modal = $modalImg.parents('.modal');
-
-						setTimeout(function() {
-
-							// No longer visible? Bail.
-								if (!$modal.hasClass('visible'))
-									return;
-
-							// Set loaded.
-								$modal.addClass('loaded');
-
-						}, 275);
-
-					});
+			});
 
 })(jQuery);
